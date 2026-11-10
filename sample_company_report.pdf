@@ -1,0 +1,115 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 586 >>
+stream
+BT
+/F1 12 Tf
+50 720 Td
+18 TL
+/F1 16 Tf (DOCUMIND CORP - ANNUAL REPORT 2024) Tj T* /F1 12 Tf
+(Page 1: Company Overview and Executive Summary) Tj T*
+() Tj T*
+(DocuMind Inc. was founded in 2024 by Dr. Elena Vance in Zurich, Switzerland.) Tj T*
+(The mission of DocuMind is to eliminate enterprise hallucinations in knowledge retrieval.) Tj T*
+(The flagship software product is the DocuMind Platform 2.0.) Tj T*
+(By Q3 2024, DocuMind reached 50,000 active enterprise users across 12 countries.) Tj T*
+(The company currently employs 42 full-time researchers and software engineers.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 7 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 591 >>
+stream
+BT
+/F1 12 Tf
+50 720 Td
+18 TL
+/F1 16 Tf (DOCUMIND CORP - ANNUAL REPORT 2024) Tj T* /F1 12 Tf
+(Page 2: Financial Performance and Key Metrics) Tj T*
+() Tj T*
+(In fiscal year 2024, total revenue reached 12.4 million USD.) Tj T*
+(This represented a 45 percent year-over-year increase compared to 2023.) Tj T*
+(Research and Development expenditure was 3.8 million USD.) Tj T*
+(DocuMind achieved a net operating profit of 2.1 million USD.) Tj T*
+(The enterprise software gross margin remained healthy at 78 percent.) Tj T*
+(The projected revenue for fiscal year 2025 is 19.5 million USD.) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 9 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+9 0 obj
+<< /Length 629 >>
+stream
+BT
+/F1 12 Tf
+50 720 Td
+18 TL
+/F1 16 Tf (DOCUMIND CORP - ANNUAL REPORT 2024) Tj T* /F1 12 Tf
+(Page 3: Technical Architecture and Infrastructure) Tj T*
+() Tj T*
+(The core indexing engine leverages FAISS with cosine similarity over 384-dimensional dense vectors.) Tj T*
+(The default embedding model deployed is sentence-transformers all-MiniLM-L6-v2.) Tj T*
+(The retrieval latency SLA is strictly under 150 milliseconds for 99 percent of requests.) Tj T*
+(All enterprise data is encrypted using AES-256 at rest and TLS 1.3 in transit.) Tj T*
+(The underlying vector index supports up to 10 million vector records per node.) Tj T*
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 11 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+11 0 obj
+<< /Length 605 >>
+stream
+BT
+/F1 12 Tf
+50 720 Td
+18 TL
+/F1 16 Tf (DOCUMIND CORP - ANNUAL REPORT 2024) Tj T* /F1 12 Tf
+(Page 4: Security Policies and Compliance) Tj T*
+() Tj T*
+(DocuMind strictly treats all retrieved document passages as untrusted user data.) Tj T*
+(The system adheres to SOC2 Type II compliance and ISO 27001 certification standards.) Tj T*
+(All session states are strictly isolated to avoid cross-tenant data leakage.) Tj T*
+(System instruction injection attempts are blocked by prompt isolation boundaries.) Tj T*
+(Compliance audits are conducted bi-annually by an independent security advisory board.) Tj T*
+ET
+endstream
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000140 00000 n 
+0000000210 00000 n 
+0000000336 00000 n 
+0000000972 00000 n 
+0000001098 00000 n 
+0000001739 00000 n 
+0000001865 00000 n 
+0000002544 00000 n 
+0000002672 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+3328
+%%EOF

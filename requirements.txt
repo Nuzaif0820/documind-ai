@@ -1,0 +1,27 @@
+# DocuMind AI - Dependencies
+# Tested for compatibility with Python 3.10 - 3.12
+
+# Streamlit Frontend
+streamlit>=1.38.0,<1.44.0
+
+# LangChain Ecosystem (Current modular v0.3 packages)
+langchain>=0.3.0,<0.4.0
+langchain-core>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-huggingface>=0.1.0,<0.2.0
+langchain-groq>=0.2.0,<0.3.0
+
+# Vector Store & Embeddings
+faiss-cpu>=1.8.0
+sentence-transformers>=3.0.0
+torch>=2.2.0
+
+# PDF Processing
+pypdf>=4.3.0,<5.1.0
+
+# LLM Providers & Utilities
+groq>=0.11.0
+python-dotenv>=1.0.0
+pydantic>=2.7.0
+tiktoken>=0.7.0
+numpy>=1.26.0,<2.1.0

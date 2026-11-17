@@ -112,10 +112,12 @@ def load_cached_embedding_model():
     """Cache the embedding model in RAM across user interactions."""
     return get_embedding_model()
 
-# Initialize Vector Store Manager
-if "vector_store_manager" not in st.session_state:
-    embedding_model = load_cached_embedding_model()
-    st.session_state.vector_store_manager = VectorStoreManager(embedding_model=embedding_model)
+def get_vstore_manager() -> VectorStoreManager:
+    """Lazy initialize vector store manager only when documents are processed or queried."""
+    if "vector_store_manager" not in st.session_state or st.session_state.vector_store_manager is None:
+        embedding_model = load_cached_embedding_model()
+        st.session_state.vector_store_manager = VectorStoreManager(embedding_model=embedding_model)
+    return st.session_state.vector_store_manager
 
 # ---------------------------------------------------------
 # Sidebar: Configuration, File Ingestion & Index Controls
@@ -176,12 +178,13 @@ with st.sidebar:
 
             progress_bar = st.progress(0)
             status_text = st.empty()
+            vstore = get_vstore_manager()
 
             for i, file_obj in enumerate(uploaded_files):
                 status_text.text(f"Extracting & chunking '{file_obj.name}'...")
                 try:
                     chunks, stats = processor.process_and_chunk(file_obj, file_obj.name)
-                    st.session_state.vector_store_manager.add_documents(chunks, stats)
+                    vstore.add_documents(chunks, stats)
                     st.session_state.indexed_files[file_obj.name] = stats
                     total_chunks_added += len(chunks)
                     success_count += 1
@@ -240,7 +243,9 @@ with st.sidebar:
             st.rerun()
     with col2:
         if st.button("Reset Index", use_container_width=True):
-            st.session_state.vector_store_manager.clear()
+            if "vector_store_manager" in st.session_state and st.session_state.vector_store_manager:
+                st.session_state.vector_store_manager.clear()
+            st.session_state.vector_store_manager = None
             st.session_state.indexed_files = {}
             st.session_state.messages = []
             st.success("Vector store cleared.")
@@ -327,7 +332,7 @@ if user_query:
         st.markdown(user_query)
 
     # 2. Check prerequisites
-    if not st.session_state.vector_store_manager.is_indexed:
+    if not st.session_state.indexed_files:
         warning_msg = "Please upload and process at least one PDF in the sidebar before asking questions."
         with st.chat_message("assistant"):
             st.warning(warning_msg)
@@ -339,8 +344,9 @@ if user_query:
         st.session_state.messages.append({"role": "assistant", "content": api_warning})
     else:
         # 3. Instantiate and run RAG Pipeline
+        vstore = get_vstore_manager()
         rag_pipeline = RAGPipeline(
-            vector_store_manager=st.session_state.vector_store_manager,
+            vector_store_manager=vstore,
             groq_api_key=user_api_key,
             model_name=selected_model,
             temperature=temperature

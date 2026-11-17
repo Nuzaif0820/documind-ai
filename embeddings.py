@@ -4,6 +4,7 @@ Initializes and caches the Hugging Face Sentence Transformers embedding model.
 Ensures normalized vector outputs for true cosine similarity comparison in FAISS.
 """
 
+import os
 from typing import Optional
 from config import DEFAULT_EMBEDDING_MODEL, EMBEDDING_DEVICE
 
@@ -18,18 +19,19 @@ def get_embedding_model(
     """
     Load and return the HuggingFace embeddings model.
     Caches the instance to avoid repeatedly loading heavy model weights into RAM.
-    
-    Args:
-        model_name: HuggingFace model repo ID.
-        device: 'cuda' or 'cpu'. Defaults to config setting.
-        
-    Returns:
-        HuggingFaceEmbeddings instance compatible with LangChain vector stores.
+    Optimized for low memory consumption in cloud containers.
     """
     global _EMBEDDINGS_INSTANCE
 
     if _EMBEDDINGS_INSTANCE is not None:
         return _EMBEDDINGS_INSTANCE
+
+    # Limit torch threads to save memory on shared cloud instances
+    try:
+        import torch
+        torch.set_num_threads(1)
+    except Exception:
+        pass
 
     chosen_device = device or EMBEDDING_DEVICE
 

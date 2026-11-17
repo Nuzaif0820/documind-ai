@@ -1,5 +1,4 @@
-# DocuMind AI - Dependencies
-# Tested for compatibility with Python 3.10 - 3.12
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # Streamlit Frontend
 streamlit>=1.38.0,<1.44.0

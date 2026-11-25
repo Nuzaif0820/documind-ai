@@ -158,6 +158,18 @@ with st.sidebar:
                 st.success("API Key verified & active models loaded", icon="✅")
             else:
                 st.success("API Key detected", icon="✅")
+
+            # Option to save key permanently to .env file for future sessions
+            if clean_api_key != env_groq_key:
+                if st.button("💾 Save Key for Future Sessions", use_container_width=True, help="Saves key locally to .env so you never have to re-enter it."):
+                    env_file = BASE_DIR / ".env"
+                    with open(env_file, "w", encoding="utf-8") as f:
+                        f.write(f"GROQ_API_KEY={clean_api_key}\n")
+                    os.environ["GROQ_API_KEY"] = clean_api_key
+                    st.toast("API Key saved permanently! It will auto-load on future visits.", icon="💾")
+                    st.rerun()
+            else:
+                st.caption("🔒 *Key saved locally (.env) — auto-loaded on startup.*")
         except Exception as e:
             st.warning(f"Key detected, using default model list ({str(e)[:60]})", icon="⚠️")
     else:

@@ -63,15 +63,29 @@ MAX_RESPONSE_TOKENS = 1500
 # Grounding & Refusal Constants
 REFUSAL_RESPONSE = "I couldn't find sufficient information in the uploaded documents."
 
-# Groq API Key resolution: checks environment or Streamlit secrets
+# Groq API Key resolution: checks environment, .env file, or Streamlit secrets
 def get_groq_api_key() -> str:
-    """Retrieve Groq API key from environment variables or Streamlit secrets."""
-    # First check standard environment
+    """Retrieve Groq API key from environment variables, .env file, or Streamlit secrets."""
+    # 1. First check standard environment
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     if api_key:
         return api_key
-    
-    # Try importing streamlit secrets only if secrets file actually exists
+
+    # 2. Check local .env file explicitly
+    env_file = BASE_DIR / ".env"
+    if env_file.exists():
+        try:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("GROQ_API_KEY=") and not line.startswith("#"):
+                        val = line.split("=", 1)[1].strip().strip('"\'')
+                        if val:
+                            return val
+        except Exception:
+            pass
+
+    # 3. Try importing streamlit secrets only if secrets file actually exists
     secrets_file = BASE_DIR / ".streamlit" / "secrets.toml"
     user_secrets = Path.home() / ".streamlit" / "secrets.toml"
     if secrets_file.exists() or user_secrets.exists():
@@ -81,5 +95,5 @@ def get_groq_api_key() -> str:
                 return st.secrets["GROQ_API_KEY"].strip()
         except Exception:
             pass
-    
+
     return ""

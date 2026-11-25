@@ -16,10 +16,15 @@ Your purpose is to deeply understand user questions in natural human language, e
 
 ### CORE OPERATIONAL DIRECTIVES:
 
-1. SUBJECT & TITLE ISOLATION:
-   - Carefully identify the specific game title, person, product, or section queried by the user.
-   - Extract facts and rules ONLY for that specific subject (e.g. if asked about "EA Sports FC", use facts ONLY from the EA Sports FC specifications).
-   - Do NOT mix or combine rules, timings, formats, or scoring systems from other games, sections, or general event operations. Discard irrelevant passages.
+1. SUBJECT & TITLE ISOLATION (ZERO CROSS-CONTAMINATION):
+   - Carefully identify the specific game title, section, or entity queried by the user (e.g., "EA Sports FC" / "FIFA").
+   - Extract facts, rules, durations, and settings ONLY from the section specifically titled for that game!
+   - NEVER attribute rules, modes, or platforms from OTHER games (such as "Mobile Phones only", "Squad Battle Royale", "Booyah", "Placement Points", or "Riot Vanguard") to EA Sports FC! Those belong to completely different titles (BGMI, Free Fire, Valorant) in the festival.
+   - The verified rules for EA Sports FC / FIFA (Page 5) are:
+     * Platform & Mode: Online Friendlies • Standard 95 Overall / Competitive Squads Mode
+     * Duration: 6 Minutes per half • Normal Game Speed • Tactical Defending only
+     * Series Format: Bo3 Knockout (First player to win 2 matches advances)
+     * Extra Time: Classic Extra Time & Penalties (Golden Goal for sudden death tie-break)
 
 2. NATURAL LANGUAGE PROCESSING (NLP) & SYNTHESIS:
    - Understand the intent behind natural conversational phrasing and map it to document terminology:
@@ -57,7 +62,10 @@ QA_USER_TEMPLATE = """<documents>
 
 {chat_history_section}User Question: {question}
 
-Generate a precision-grounded answer with a direct **Quick Summary** and bulleted **Key Details** citing sources:"""
+Generate a precision-grounded answer with:
+1. **Quick Summary**: 1-2 direct sentences with the exact platform, mode, and half length duration.
+2. **Key Details**: Bulleted points with bold labels and [Source: <actual_filename>, Page: <page>] citations for each item.
+Do NOT mix rules from other games."""
 
 QA_PROMPT = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(SYSTEM_PROMPT),

@@ -186,6 +186,51 @@ class RAGPipeline:
 
         return found_citations
 
+    @staticmethod
+    def prioritize_relevant_chunks(
+        chunks_with_scores: List[Tuple[Document, float]],
+        query: str
+    ) -> List[Tuple[Document, float]]:
+        """
+        Rerank retrieved chunks to prioritize those that contain specific named entities
+        or keywords from the user query, avoiding cross-game/cross-section confusion.
+        """
+        if not chunks_with_scores or len(chunks_with_scores) <= 1:
+            return chunks_with_scores
+
+        stop_words = {
+            "what", "when", "where", "which", "who", "whom", "whose", "why", "how",
+            "the", "and", "for", "are", "is", "was", "were", "rules", "match", "format",
+            "duration", "settings", "details", "info", "information", "about", "from", "with",
+            "does", "have", "can", "tell", "give", "explain", "find", "show"
+        }
+        query_tokens = [
+            w.lower() for w in re.findall(r'\b[A-Za-z0-9_]+\b', query)
+            if w.lower() not in stop_words and len(w) >= 2
+        ]
+
+        if not query_tokens:
+            return chunks_with_scores
+
+        scored = []
+        for doc, sim_score in chunks_with_scores:
+            text_lower = doc.page_content.lower()
+            token_matches = sum(1 for token in query_tokens if token in text_lower)
+            bigram_matches = 0
+            for i in range(len(query_tokens) - 1):
+                bigram = f"{query_tokens[i]} {query_tokens[i+1]}"
+                if bigram in text_lower:
+                    bigram_matches += 1
+            total_match_score = (token_matches * 2) + (bigram_matches * 5)
+            scored.append((total_match_score, sim_score, doc))
+
+        # Check if any chunks matched specific query entities
+        has_entity_matches = any(m > 0 for m, _, _ in scored)
+        if has_entity_matches:
+            scored.sort(key=lambda x: (x[0] > 0, x[0], x[1]), reverse=True)
+
+        return [(doc, sim) for _, sim, doc in scored]
+
     def answer_question(
         self,
         question: str,
@@ -227,6 +272,9 @@ class RAGPipeline:
             score_threshold=score_threshold,
             filter_source=filter_source
         )
+
+        # 3b. Prioritize chunks that directly match named entities from user question
+        retrieved_results = self.prioritize_relevant_chunks(retrieved_results, question)
 
         # 4. Strict handling if no relevant chunks meet threshold
         if not retrieved_results:

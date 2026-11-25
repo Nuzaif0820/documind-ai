@@ -23,13 +23,12 @@ DEFAULT_INDEX_DIR = BASE_DIR / "storage" / "faiss_index"
 MAX_FILE_SIZE_MB = 25
 ALLOWED_EXTENSIONS = [".pdf"]
 
-# Chunking Strategy Rationale:
-# - chunk_size (900 chars ~ 150-200 words): Fits 1-2 coherent paragraphs or bullet sets.
-#   Avoids diluting embedding vectors with unrelated concepts.
-# - chunk_overlap (150 chars ~ 25-30 words): Prevents loss of cross-boundary sentence
-#   meaning and ensures search matches don't lose context.
-DEFAULT_CHUNK_SIZE = 900
-DEFAULT_CHUNK_OVERLAP = 150
+# Chunking Strategy:
+# - chunk_size (1400 chars ~ 250-300 words): Captures entire promotional specification
+#   cards, game flyers, or complex rule tables intact without splitting headers from content.
+# - chunk_overlap (250 chars ~ 40-50 words): Ensures seamless continuity across chunk boundaries.
+DEFAULT_CHUNK_SIZE = 1400
+DEFAULT_CHUNK_OVERLAP = 250
 CHUNK_SEPARATORS = ["\n\n", "\n", ". ", " ", ""]
 
 # Embedding Configuration

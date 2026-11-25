@@ -140,17 +140,42 @@ with st.sidebar:
         help="Obtain a free API key at https://console.groq.com"
     )
 
-    if user_api_key:
-        st.success("API Key detected", icon="✅")
+    clean_api_key = user_api_key.strip()
+    available_models = SUPPORTED_GROQ_MODELS
+
+    if clean_api_key:
+        try:
+            from groq import Groq
+            _client = Groq(api_key=clean_api_key)
+            _models_resp = _client.models.list()
+            # Filter text generation models, exclude whisper/audio/moderation
+            _fetched = [
+                m.id for m in _models_resp.data
+                if not any(x in m.id.lower() for x in ["whisper", "guard", "safeguard", "tts", "embedding"])
+            ]
+            if _fetched:
+                available_models = sorted(_fetched)
+                st.success("API Key verified & active models loaded", icon="✅")
+            else:
+                st.success("API Key detected", icon="✅")
+        except Exception as e:
+            st.warning(f"Key detected, using default model list ({str(e)[:60]})", icon="⚠️")
     else:
         st.warning("Please supply a Groq API key to query documents.", icon="⚠️")
 
+    # Keep previously chosen model if valid, else pick first available
+    default_idx = 0
+    if selected_model_candidate := st.session_state.get("selected_model"):
+        if selected_model_candidate in available_models:
+            default_idx = available_models.index(selected_model_candidate)
+
     selected_model = st.selectbox(
         "Model",
-        options=SUPPORTED_GROQ_MODELS,
-        index=0,
-        help="Select the Groq-hosted LLM model."
+        options=available_models,
+        index=default_idx,
+        help="Models dynamically retrieved from your Groq account."
     )
+    st.session_state["selected_model"] = selected_model
 
     st.markdown("---")
 
@@ -337,7 +362,7 @@ if user_query:
         with st.chat_message("assistant"):
             st.warning(warning_msg)
         st.session_state.messages.append({"role": "assistant", "content": warning_msg})
-    elif not user_api_key:
+    elif not clean_api_key:
         api_warning = "Please provide a valid Groq API Key in the sidebar to enable answer generation."
         with st.chat_message("assistant"):
             st.warning(api_warning)
@@ -347,7 +372,7 @@ if user_query:
         vstore = get_vstore_manager()
         rag_pipeline = RAGPipeline(
             vector_store_manager=vstore,
-            groq_api_key=user_api_key,
+            groq_api_key=clean_api_key,
             model_name=selected_model,
             temperature=temperature
         )

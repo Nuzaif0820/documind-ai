@@ -40,21 +40,24 @@ DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 EMBEDDING_DEVICE = "cuda" if os.environ.get("USE_CUDA", "false").lower() == "true" else "cpu"
 
 # Vector Store / Retrieval Settings
-DEFAULT_TOP_K = 4
+DEFAULT_TOP_K = 5
 MIN_TOP_K = 1
 MAX_TOP_K = 8
 # Cosine similarity threshold (0.0 to 1.0, where 1.0 is exact match)
-DEFAULT_SIMILARITY_THRESHOLD = 0.30
+# 0.20 provides optimal balance: filters out pure noise while preserving chunks with vocabulary variance
+DEFAULT_SIMILARITY_THRESHOLD = 0.20
 
 # LLM Providers & Models
 # Groq API provides lightning-fast inference for open-weights models on free tier.
 SUPPORTED_GROQ_MODELS = [
-    "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
+    "llama-3.1-70b-versatile",
+    "llama3-70b-8192",
+    "llama3-8b-8192",
     "mixtral-8x7b-32768",
     "gemma2-9b-it"
 ]
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
 DEFAULT_TEMPERATURE = 0.1
 MAX_RESPONSE_TOKENS = 1500
 
@@ -69,12 +72,15 @@ def get_groq_api_key() -> str:
     if api_key:
         return api_key
     
-    # Try importing streamlit secrets if running inside Streamlit
-    try:
-        import streamlit as st
-        if "GROQ_API_KEY" in st.secrets:
-            return st.secrets["GROQ_API_KEY"].strip()
-    except Exception:
-        pass
+    # Try importing streamlit secrets only if secrets file actually exists
+    secrets_file = BASE_DIR / ".streamlit" / "secrets.toml"
+    user_secrets = Path.home() / ".streamlit" / "secrets.toml"
+    if secrets_file.exists() or user_secrets.exists():
+        try:
+            import streamlit as st
+            if "GROQ_API_KEY" in st.secrets:
+                return st.secrets["GROQ_API_KEY"].strip()
+        except Exception:
+            pass
     
     return ""

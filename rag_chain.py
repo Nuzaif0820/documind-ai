@@ -41,8 +41,9 @@ class RAGPipeline:
         temperature: float = DEFAULT_TEMPERATURE
     ):
         self.vector_store_manager = vector_store_manager
-        self.groq_api_key = groq_api_key or get_groq_api_key()
-        self.model_name = model_name
+        raw_key = groq_api_key or get_groq_api_key() or ""
+        self.groq_api_key = raw_key.strip()
+        self.model_name = (model_name or DEFAULT_GROQ_MODEL).strip()
         self.temperature = temperature
         self._llm = None
 
@@ -130,39 +131,41 @@ class RAGPipeline:
                     "chunk_id": doc.metadata.get("chunk_id", "")
                 }
 
-        # Regex to capture [Source: <filename>, Page: <number>]
-        citation_pattern = re.compile(
-            r'\[(?:Source:\s*)?([^,\]]+),\s*(?:Page:\s*)?(\d+)\]',
-            re.IGNORECASE
-        )
+        # Multiple regex patterns to capture bracketed, parenthesized, or plain Source/Page tags
+        citation_patterns = [
+            re.compile(r'\[(?:Source:\s*)?([^,\]]+),\s*(?:Page:\s*)?(\d+)\]', re.IGNORECASE),
+            re.compile(r'\((?:Source:\s*)?([^,\)]+),\s*(?:Page:\s*)?(\d+)\)', re.IGNORECASE),
+            re.compile(r'Source:\s*([^\n,]+),\s*Page:\s*(\d+)', re.IGNORECASE)
+        ]
 
         found_citations: List[Dict[str, Any]] = []
         seen_keys = set()
 
-        for match in citation_pattern.finditer(llm_answer):
-            raw_source = match.group(1).strip()
-            try:
-                page_num = int(match.group(2).strip())
-            except ValueError:
-                continue
+        for pattern in citation_patterns:
+            for match in pattern.finditer(llm_answer):
+                raw_source = match.group(1).strip()
+                try:
+                    page_num = int(match.group(2).strip())
+                except ValueError:
+                    continue
 
-            lookup_key = (raw_source.lower(), page_num)
+                lookup_key = (raw_source.lower(), page_num)
 
-            # Check exact match or basename match
-            matched_entry = None
-            if lookup_key in verified_chunks_lookup:
-                matched_entry = verified_chunks_lookup[lookup_key]
-            else:
-                # Try matching by filename ending
-                for (v_src, v_pg), v_data in verified_chunks_lookup.items():
-                    if (v_src.endswith(raw_source.lower()) or raw_source.lower().endswith(v_src)) and v_pg == page_num:
-                        matched_entry = v_data
-                        lookup_key = (v_src, v_pg)
-                        break
+                # Check exact match or basename match
+                matched_entry = None
+                if lookup_key in verified_chunks_lookup:
+                    matched_entry = verified_chunks_lookup[lookup_key]
+                else:
+                    # Try matching by filename ending
+                    for (v_src, v_pg), v_data in verified_chunks_lookup.items():
+                        if (v_src.endswith(raw_source.lower()) or raw_source.lower().endswith(v_src)) and v_pg == page_num:
+                            matched_entry = v_data
+                            lookup_key = (v_src, v_pg)
+                            break
 
-            if matched_entry and lookup_key not in seen_keys:
-                seen_keys.add(lookup_key)
-                found_citations.append(matched_entry)
+                if matched_entry and lookup_key not in seen_keys:
+                    seen_keys.add(lookup_key)
+                    found_citations.append(matched_entry)
 
         # Fallback: if LLM didn't insert explicit markers but answered from context,
         # return top retrieved chunks as reference sources
@@ -242,11 +245,20 @@ class RAGPipeline:
         ]
         context_str = "\n".join(context_blocks)
 
+        # Filter out errors and refusals from history to prevent negative priming
+        clean_history = [
+            m for m in chat_history
+            if not m.get("content", "").startswith("An error occurred")
+            and not m.get("content", "").startswith("Error code")
+            and "Please provide a valid" not in m.get("content", "")
+            and "I couldn't find sufficient information" not in m.get("content", "")
+        ]
+
         # Format history string
         history_str = "\n".join(
             f"{'User' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
-            for m in chat_history[-6:]
-        ) if chat_history else "No prior conversation."
+            for m in clean_history[-4:]
+        ) if clean_history else "No prior conversation."
 
         # 6. Call LLM for grounded generation
         try:
@@ -259,6 +271,20 @@ class RAGPipeline:
             )
             response = llm.invoke(prompt_val)
             raw_answer = response.content.strip()
+
+            # Remove accidental continuation of passage headers or XML tags if emitted by smaller models
+            raw_answer = re.sub(r'---\s*PASSAGE\s*\[\d+\].*?---\s*', '', raw_answer, flags=re.DOTALL).strip()
+            raw_answer = re.sub(r'</?document[^>]*>', '', raw_answer).strip()
+
+            # Clean up robotic preambles like "Based on the provided documents..."
+            lines = raw_answer.split('\n')
+            if lines and re.match(r'^based on (the|our)?\s*(information|context|uploaded|provided)', lines[0].strip(), re.IGNORECASE):
+                if lines[0].strip().endswith(':') or 'as follows' in lines[0].lower():
+                    raw_answer = '\n'.join(lines[1:]).strip()
+
+            # Post-processing NLP: Clean up redundant trailing refusal if actual answers were provided
+            if len(raw_answer) > 100 and REFUSAL_RESPONSE.lower() in raw_answer.lower():
+                raw_answer = re.sub(r'\n*I couldn\'?t find sufficient information in the uploaded documents\.?\s*$', '', raw_answer, flags=re.IGNORECASE).strip()
         except ValueError as ve:
             return {
                 "answer": f"**API Key Required**: {str(ve)}",

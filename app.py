@@ -148,13 +148,18 @@ with st.sidebar:
             from groq import Groq
             _client = Groq(api_key=clean_api_key)
             _models_resp = _client.models.list()
-            # Filter text generation models, exclude whisper/audio/moderation
+            # Filter text generation models, exclude non-text, preview, or empty-output models
             _fetched = [
                 m.id for m in _models_resp.data
-                if not any(x in m.id.lower() for x in ["whisper", "guard", "safeguard", "tts", "embedding"])
+                if not any(x in m.id.lower() for x in ["whisper", "guard", "safeguard", "tts", "embedding", "gpt-oss", "orpheus"])
             ]
             if _fetched:
-                available_models = sorted(_fetched)
+                # Prioritize qwen/qwen3.8-27b as the primary recommended model
+                if "qwen/qwen3.8-27b" in _fetched:
+                    _fetched.remove("qwen/qwen3.8-27b")
+                    available_models = ["qwen/qwen3.8-27b"] + sorted(_fetched)
+                else:
+                    available_models = sorted(_fetched)
                 st.success("API Key verified & active models loaded", icon="✅")
             else:
                 st.success("API Key detected", icon="✅")
@@ -175,10 +180,10 @@ with st.sidebar:
     else:
         st.warning("Please supply a Groq API key to query documents.", icon="⚠️")
 
-    # Keep previously chosen model if valid, else pick first available
+    # Select qwen/qwen3.8-27b by default
     default_idx = 0
     if selected_model_candidate := st.session_state.get("selected_model"):
-        if selected_model_candidate in available_models:
+        if selected_model_candidate in available_models and selected_model_candidate != "openai/gpt-oss-120b":
             default_idx = available_models.index(selected_model_candidate)
 
     selected_model = st.selectbox(

@@ -348,6 +348,9 @@ class RAGPipeline:
                     raw_answer,
                     flags=re.IGNORECASE
                 ).strip()
+
+            if not raw_answer:
+                raw_answer = "The selected model returned an empty response. Please select `qwen/qwen3.8-27b` in the sidebar Model dropdown for full answers."
         except ValueError as ve:
             return {
                 "answer": f"**API Key Required**: {str(ve)}",

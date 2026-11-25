@@ -50,10 +50,7 @@ DEFAULT_SIMILARITY_THRESHOLD = 0.20
 # Groq API provides lightning-fast inference for open-weights models on free tier.
 SUPPORTED_GROQ_MODELS = [
     "qwen/qwen3.8-27b",
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b",
-    "allam-2-7b",
-    "llama-3.1-8b-instant"
+    "allam-2-7b"
 ]
 DEFAULT_GROQ_MODEL = "qwen/qwen3.8-27b"
 DEFAULT_TEMPERATURE = 0.1

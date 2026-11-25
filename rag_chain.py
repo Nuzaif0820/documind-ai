@@ -254,20 +254,23 @@ class RAGPipeline:
             and "I couldn't find sufficient information" not in m.get("content", "")
         ]
 
-        # Format history string
-        history_str = "\n".join(
-            f"{'User' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
-            for m in clean_history[-4:]
-        ) if clean_history else "No prior conversation."
+        # Quarantined history section - ONLY included when previous conversation actually exists
+        if clean_history:
+            history_text = "\n".join(
+                f"{'User' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
+                for m in clean_history[-4:]
+            )
+            chat_history_section = f"<conversation_history>\n{history_text}\n</conversation_history>\n\n"
+        else:
+            chat_history_section = ""
 
         # 6. Call LLM for grounded generation
         try:
             llm = self._get_llm()
             prompt_val = QA_PROMPT.format_messages(
                 context=context_str,
-                chat_history=history_str,
-                question=question,
-                refusal_message=REFUSAL_RESPONSE
+                chat_history_section=chat_history_section,
+                question=question
             )
             response = llm.invoke(prompt_val)
             raw_answer = response.content.strip()
@@ -282,9 +285,21 @@ class RAGPipeline:
                 if lines[0].strip().endswith(':') or 'as follows' in lines[0].lower():
                     raw_answer = '\n'.join(lines[1:]).strip()
 
-            # Post-processing NLP: Clean up redundant trailing refusal if actual answers were provided
-            if len(raw_answer) > 100 and REFUSAL_RESPONSE.lower() in raw_answer.lower():
-                raw_answer = re.sub(r'\n*I couldn\'?t find sufficient information in the uploaded documents\.?\s*$', '', raw_answer, flags=re.IGNORECASE).strip()
+            # Safeguard: replace literal placeholder "<filename>" with actual source filename
+            if retrieved_results:
+                primary_source = retrieved_results[0][0].metadata.get("source", "document.pdf")
+                raw_answer = re.sub(r'\[Source:\s*<filename>,\s*Page:\s*(\d+)\]', f'[Source: {primary_source}, Page: \\1]', raw_answer, flags=re.IGNORECASE)
+                raw_answer = re.sub(r'\[Source:\s*filename,\s*Page:\s*(\d+)\]', f'[Source: {primary_source}, Page: \\1]', raw_answer, flags=re.IGNORECASE)
+                raw_answer = raw_answer.replace("<filename>", primary_source)
+
+            # Post-processing NLP: Clean up redundant trailing refusal if substantive answer was generated
+            if len(raw_answer) > 80:
+                raw_answer = re.sub(
+                    r'\n*(?:I couldn\'?t find sufficient information[^\n]*|The document doesn\'?t contain[^\n]*)\.?\s*$',
+                    '',
+                    raw_answer,
+                    flags=re.IGNORECASE
+                ).strip()
         except ValueError as ve:
             return {
                 "answer": f"**API Key Required**: {str(ve)}",
